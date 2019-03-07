@@ -8,14 +8,15 @@ class App
                    'second' => '%S' }.freeze
 
   def call(env)
-    return wrong_path_response if env['REQUEST_PATH'] != APP_PATH
+    request = Rack::Request.new(env)
 
-    query = Rack::Utils.parse_query(env['QUERY_STRING'])
+    return wrong_path_response unless request.path == APP_PATH
 
-    return wrong_query_response if query['format'].nil?
+    return wrong_query_response if request.params['format'].nil?
+
+    format = request.params['format'].split(',')
 
     wrong_formats = []
-    format = query['format'].split(',')
 
     ftime = format.map do |f|
       requested_format = TIME_FORMATS[f]
