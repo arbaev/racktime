@@ -14,11 +14,21 @@ class App
 
     return wrong_query_response if request.params['format'].nil?
 
-    format = request.params['format'].split(',')
+    ftime = format_time(request.params['format'].split(','))
 
+    return wrong_formats_response(ftime[:wrong]) unless ftime[:wrong].empty?
+
+    response_string = Time.now.strftime(ftime[:requested].join('-'))
+
+    response(200, text_plain, response_string)
+  end
+
+  private
+
+  def format_time(format)
     wrong_formats = []
 
-    ftime = format.map do |f|
+    requested = format.map do |f|
       requested_format = TIME_FORMATS[f]
 
       wrong_formats.push(f) if requested_format.nil?
@@ -26,14 +36,8 @@ class App
       requested_format
     end
 
-    return wrong_formats_response(wrong_formats) unless wrong_formats.empty?
-
-    response_string = Time.now.strftime(ftime.join('-'))
-
-    response(200, text_plain, response_string)
+    { requested: requested, wrong: wrong_formats }
   end
-
-  private
 
   def response(status, type, body)
     [status, type, [body]]
