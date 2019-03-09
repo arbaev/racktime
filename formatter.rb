@@ -28,6 +28,6 @@ class Formatter
   end
 
   def formatted
-    @formats.partition { |f| TIME_FORMATS[f] }
+    @formats.partition { |f| TIME_FORMATS.key?(f) }
   end
 end
