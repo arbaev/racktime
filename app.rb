@@ -1,11 +1,7 @@
+require_relative 'formatter'
+
 class App
   APP_PATH = '/time'.freeze
-  TIME_FORMATS = { 'year' => '%Y',
-                   'month' => '%m',
-                   'day' => '%d',
-                   'hour' => '%H',
-                   'minute' => '%M',
-                   'second' => '%S' }.freeze
 
   def call(env)
     request = Rack::Request.new(env)
@@ -14,33 +10,17 @@ class App
 
     return wrong_query_response if request.params['format'].nil?
 
-    ftime = format_time(request.params['format'].split(','))
+    ftime = Formatter.new(request.params['format'])
 
-    return wrong_formats_response(ftime[:wrong]) unless ftime[:wrong].empty?
+    return wrong_formats_response(ftime.invalid_formats) unless ftime.valid?
 
-    response_string = Time.now.strftime(ftime[:requested].join('-'))
-
-    response(200, text_plain, response_string)
+    response(200, text_plain, ftime.formatted_time)
   end
 
   private
 
-  def format_time(format)
-    wrong_formats = []
-
-    requested = format.map do |f|
-      requested_format = TIME_FORMATS[f]
-
-      wrong_formats.push(f) if requested_format.nil?
-
-      requested_format
-    end
-
-    { requested: requested, wrong: wrong_formats }
-  end
-
-  def response(status, type, body)
-    [status, type, [body]]
+  def response(status, headers, body)
+    [status, headers, ["#{body}\n"]]
   end
 
   def text_plain
@@ -52,10 +32,10 @@ class App
   end
 
   def wrong_query_response
-    response(400, text_plain, "Wrong parameter. Try format=year%2Cmonth%2Cday")
+    response(400, text_plain, "Wrong parameter. Try ?format=")
   end
 
   def wrong_formats_response(formats)
-    response(400, text_plain, "Unknown time format #{formats}")
+    response(400, text_plain, "Unknown time format #{formats}. Available formats are: #{Formatter::TIME_FORMATS.keys.join(', ')}")
   end
 end
